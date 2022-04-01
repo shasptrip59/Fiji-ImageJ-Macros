@@ -1,0 +1,65 @@
+// This macro, given a selection starting from the radius of a circle, will "clock scan" counterclockwise
+// from that point, all the way around 360 degrees, moving in a specified increment each time and measuring
+// the mean intensity value at each increment. Values are then plotted.
+
+
+// 1] Prep Stuff
+
+run("Line Width...", "line=5");
+run("Set Measurements...", "area mean standard modal min integrated redirect=None decimal=0");
+angleIncrement = 3; // degrees line will move at a time [in the counterclockwise direction]
+means = newArray(360/angleIncrement); // array of mean intensity values (MFI)
+angles = newArray(360/angleIncrement); // array of angles that MFI is measured at
+meansCounter = 0; // counter for populating the means array
+
+
+for (i = 0; i < angles.length; i++) { // populate angle array with angle increments from 0-360
+	angles[i] = i * angleIncrement;
+}
+
+
+// 2] Start Measuring Values
+for (i = 0; i < 360/angleIncrement; i++) {
+	rotateCurrentLineSelection(angleIncrement);
+	run("Measure");
+	means[meansCounter] = getResult("Mean", meansCounter);
+	meansCounter++;
+}
+
+Plot.create("Radial Mean Intensity", "Angle", "Intensity", angles, means); // Create plot of means at each angle
+
+
+// Helper Functions - https://forum.image.sc/t/rotate-line-roi-via-rotating-point-coordinates/8323
+
+function rotateCurrentLineSelection(theta){
+	getSelectionCoordinates( x, y );
+	getDimensions(w,h,ch,sl,fr);
+	p1 = rotatePoint(theta,x[0],y[0],h,w);
+	p2 = rotatePoint(theta,x[1],y[1],h,w);
+	makeLine(p1[0],p1[1],p2[0],p2[1]);
+}
+
+function rotatePoint(theta,x,y,h,w){
+	// Translate to centre origin cartesian and radians
+	x1 = x-(w/2); 
+	y1 = -(y-(h/2));
+	theta = theta*PI/180;
+	// Rotate point	
+	x2 = (x1*cos(theta))-(y1*sin(theta));
+	y2 = (x1*sin(theta))+(y1*cos(theta));
+	// Translate back to imageJ coordinates
+	x2 = x2 + (w/2); 
+	y2 = (h/2)-y2;
+	point = newArray(x2,y2);
+	return point;
+}
+
+//Other Commands/work in progress:
+//makeLine(50, 50, 206, 206);
+//Rename results table
+//for (i=0; i<nResults; i++) {
+//    oldLabel = getResultLabel(i);
+//    delimiter = indexOf(oldLabel, ":");
+//    newLabel = substring(oldLabel, delimiter+1);
+//    setResult("Label", i, newLabel);
+//  }
